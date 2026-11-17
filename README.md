@@ -91,7 +91,9 @@ Add the dependency above to your `pom.xml`.
 
 ```yaml
 minio:
-  enabled: true
+  endpoint: http://localhost:9000
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
 ```
 
 ### 6.3 Use the bean
@@ -105,12 +107,26 @@ public class Application {
 }
 ```
 
-Then inject the auto-configured bean in your code:
+The starter creates `MinioClient` from these properties. Inject it in an application service, for example:
 
 ```java
-@Autowired
-private MinioClient minioClient;
+import io.minio.BucketExistsArgs;
+import io.minio.MinioClient;
+
+public class StorageService {
+    private final MinioClient minioClient;
+
+    public StorageService(MinioClient minioClient) {
+        this.minioClient = minioClient;
+    }
+
+    public boolean bucketExists(String bucket) throws Exception {
+        return minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
+    }
+}
 ```
+
+Use credentials for your own MinIO server and keep them outside source control. `endpoint` may include the scheme and port; alternatively set `minio.port` and `minio.secure` separately.
 
 ## 7. Configuration Reference
 
@@ -122,8 +138,13 @@ private MinioClient minioClient;
 
 | Property | Type | Default | Required | Description | Sensitive |
 |---|---|---|:---:|---|:---:|
-| `minio.enabled` | boolean | `true` | No | Enable the starter | No |
-<!-- additional properties below -->
+| `minio.endpoint` | string | none | Yes | MinIO server address | No |
+| `minio.access-key` | string | none | Yes | Access key | Yes |
+| `minio.secret-key` | string | none | Yes | Secret key | Yes |
+| `minio.port` | int | `-1` | No | Port when endpoint does not include one | No |
+| `minio.secure` | boolean | `false` | No | Use HTTPS with separate host and port | No |
+| `minio.region` | string | none | No | MinIO region | No |
+| `minio.part-size` | long | 5 MiB | No | Multipart part size in bytes | No |
 
 ## 8. Version Lines and Compatibility
 

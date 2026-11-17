@@ -91,7 +91,9 @@ Starter 自动装配以下 Bean：
 
 ```yaml
 minio:
-  enabled: true
+  endpoint: http://localhost:9000
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
 ```
 
 ### 6.3 使用 Bean
@@ -105,12 +107,26 @@ public class Application {
 }
 ```
 
-在业务代码中注入自动装配的 Bean：
+Starter 根据以上属性创建 `MinioClient`。在应用服务中注入，例如：
 
 ```java
-@Autowired
-private MinioClient minioClient;
+import io.minio.BucketExistsArgs;
+import io.minio.MinioClient;
+
+public class StorageService {
+    private final MinioClient minioClient;
+
+    public StorageService(MinioClient minioClient) {
+        this.minioClient = minioClient;
+    }
+
+    public boolean bucketExists(String bucket) throws Exception {
+        return minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
+    }
+}
 ```
+
+请替换为自己的 MinIO 服务凭据，并通过环境变量提供密钥。`endpoint` 可以包含协议和端口；也可分别配置 `minio.port` 与 `minio.secure`。
 
 ## 7. 配置参考
 
@@ -122,8 +138,13 @@ private MinioClient minioClient;
 
 | 属性 | 类型 | 默认值 | 必填 | 说明 | 敏感 |
 |---|---|---|:---:|---|:---:|
-| `minio.enabled` | boolean | `true` | 否 | 是否启用 Starter | 否 |
-<!-- 更多属性见下方 -->
+| `minio.endpoint` | string | 无 | 是 | MinIO 服务地址 | 否 |
+| `minio.access-key` | string | 无 | 是 | 访问密钥 | 是 |
+| `minio.secret-key` | string | 无 | 是 | 访问密钥密码 | 是 |
+| `minio.port` | int | `-1` | 否 | endpoint 未包含端口时使用 | 否 |
+| `minio.secure` | boolean | `false` | 否 | 单独配置主机和端口时使用 HTTPS | 否 |
+| `minio.region` | string | 无 | 否 | 服务区域 | 否 |
+| `minio.part-size` | long | 5 MiB | 否 | 分片大小，单位字节 | 否 |
 
 ## 8. 版本线与兼容性
 
